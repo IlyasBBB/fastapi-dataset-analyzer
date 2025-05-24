@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from pathlib import Path
 import uuid
 import pandas as pd
@@ -62,3 +63,18 @@ async def delete_dataset(dataset_id: str):
     # Remove metadata entry
     del datasets[dataset_id]
     return {"message": "Dataset deleted successfully"}
+
+@app.get("/datasets/{dataset_id}/excel/")
+async def export_excel(dataset_id: str):
+    """Export dataset to Excel"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    csv_path = DATA_DIR / f"{dataset_id}.csv"
+    df = pd.read_csv(csv_path)
+    xlsx_path = DATA_DIR / f"{dataset_id}.xlsx"
+    df.to_excel(xlsx_path, index=False)
+    return FileResponse(
+        xlsx_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=f"{datasets[dataset_id]['filename']}.xlsx"
+    )
