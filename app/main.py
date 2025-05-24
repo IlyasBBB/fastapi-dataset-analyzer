@@ -49,3 +49,16 @@ async def get_dataset(dataset_id: str):
     if dataset_id not in datasets:
         raise HTTPException(status_code=404, detail="Dataset not found")
     return datasets[dataset_id]
+
+@app.delete("/datasets/{dataset_id}/")
+async def delete_dataset(dataset_id: str):
+    """Delete a dataset file and its metadata entry"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    # Remove file from disk
+    file_path = DATA_DIR / f"{dataset_id}.csv"
+    if file_path.exists():
+        file_path.unlink()
+    # Remove metadata entry
+    del datasets[dataset_id]
+    return {"message": "Dataset deleted successfully"}
