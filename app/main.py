@@ -3,6 +3,8 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 import uuid
 import pandas as pd
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
 
 app = FastAPI(title="Dataset API")
 
@@ -89,3 +91,33 @@ async def get_stats(dataset_id: str):
     # Return describe() summary as JSON-friendly dict
     stats = df.describe().to_dict()
     return stats
+
+@app.get("/datasets/{dataset_id}/plot/")
+async def generate_plots(dataset_id: str):
+    """Generate basic histograms for all numeric columns as a PDF"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    csv_path = DATA_DIR / f"{dataset_id}.csv"
+    df = pd.read_csv(csv_path)
+
+    # Select numeric columns
+    numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    if not numeric_cols:
+        raise HTTPException(status_code=400, detail="No numeric columns found in dataset")
+
+    pdf_path = DATA_DIR / f"{dataset_id}.pdf"
+    with PdfPages(pdf_path) as pdf:
+        for col in numeric_cols:
+            fig, ax = plt.subplots()
+            df[col].hist(ax=ax)
+            ax.set_title(f"Histogram of {col}")
+            ax.set_xlabel(col)
+            ax.set_ylabel("Frequency")
+            pdf.savefig(fig)
+            plt.close(fig)
+
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=f"{datasets[dataset_id]['filename']}_plots.pdf"
+    )
