@@ -37,3 +37,15 @@ async def create_dataset(file: UploadFile = File(...)):
         "columns": len(df.columns)
     }
     return datasets[dataset_id]
+
+@app.get("/datasets/")
+async def list_datasets():
+    """List metadata for all uploaded datasets"""
+    return list(datasets.values())
+
+@app.get("/datasets/{dataset_id}/")
+async def get_dataset(dataset_id: str):
+    """Retrieve metadata for a single dataset"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    return datasets[dataset_id]
