@@ -10,7 +10,7 @@ app = FastAPI(title="Dataset API")
 DATA_DIR = Path("datasets")
 DATA_DIR.mkdir(exist_ok=True)
 
-# In‐memory store of metadata
+# In-memory store of metadata
 datasets = {}
 
 @app.get("/")
@@ -78,3 +78,14 @@ async def export_excel(dataset_id: str):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=f"{datasets[dataset_id]['filename']}.xlsx"
     )
+
+@app.get("/datasets/{dataset_id}/stats/")
+async def get_stats(dataset_id: str):
+    """Return basic statistics (describe) for a dataset"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    csv_path = DATA_DIR / f"{dataset_id}.csv"
+    df = pd.read_csv(csv_path)
+    # Return describe() summary as JSON-friendly dict
+    stats = df.describe().to_dict()
+    return stats
