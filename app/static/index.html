@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Analysis API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .feature-card {
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            padding: 80px 0;
+            margin-bottom: 40px;
+        }
+
+        .code-block {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .endpoint-card {
+            border-left: 4px solid #4f46e5;
+        }
+
+        #datasetList {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        #visualizationPreview {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#upload">Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#datasets">Datasets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#api">API</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#cli">CLI</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="http://localhost:8000/docs" target="_blank">API Docs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Upload Section -->
+    <section id="upload" class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Upload Dataset</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="uploadForm" class="mb-3">
+                                <div class="mb-3">
+                                    <label for="csvFile" class="form-label">Choose CSV File</label>
+                                    <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Upload Dataset</button>
+                            </form>
+                            <div id="uploadStatus" class="alert" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Datasets Section -->
+    <section id="datasets" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Your Datasets</h2>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="datasetList" class="list-group">
+                                <!-- Datasets will be listed here -->
+                            </div>
+                            <div id="loading" class="loading">
+                                <div class="spinner-border loading-spinner text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="statsContainer" class="card" style="max-height:400px; overflow:auto; border:1px solid #ccc; padding:10px;"></div>
+                </div>
+            </div>
+        </div>
+        
+
+    </section>
+
+    <!-- API Endpoints Section -->
+    <section id="api" class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">API Endpoints</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card endpoint-card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Dataset Management</h5>
+                            <div class="code-block">
+                                <code>POST /datasets/</code> - Upload dataset<br>
+                                <code>GET /datasets/</code> - List datasets<br>
+                                <code>GET /datasets/{id}/</code> - Get info<br>
+                                <code>DELETE /datasets/{id}/</code> - Delete dataset
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card endpoint-card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Analysis Endpoints</h5>
+                            <div class="code-block">
+                                <code>GET /datasets/{id}/stats/</code> - Get statistics<br>
+                                <code>GET /datasets/{id}/plot/</code> - Generate plots<br>
+                                <code>GET /datasets/{id}/excel/</code> - Export to Excel
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLI Section -->
+    <section id="cli" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Command Line Interface</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Available Commands</h5>
+                            <div class="code-block">
+                                <code>python client.py list</code> - List all datasets<br>
+                                <code>python client.py upload &lt;file&gt;</code> - Upload dataset<br>
+                                <code>python client.py info &lt;id&gt;</code> - Get dataset info<br>
+                                <code>python client.py delete &lt;id&gt;</code> - Delete dataset<br>
+                                <code>python client.py export &lt;id&gt;</code> - Export to Excel<br>
+                                <code>python client.py stats &lt;id&gt;</code> - Get statistics<br>
+                                <code>python client.py plot &lt;id&gt;</code> - Generate plots
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        // Function to show loading spinner
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        // Function to hide loading spinner
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Function to show status message
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Function to load datasets
+        async function loadDatasets() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_URL}/datasets/`);
+                const datasets = await response.json();
+                const datasetList = document.getElementById('datasetList');
+                datasetList.innerHTML = '';
+
+                if (datasets.length === 0) {
+                    datasetList.innerHTML = '<div class="text-center p-3">No datasets found</div>';
+                    return;
+                }
+
+                datasets.forEach(dataset => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item';
+                    item.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">${dataset.filename}</h5>
+                                <small>ID: ${dataset.id}</small>
+                                <br>
+                                <small>Rows: ${dataset.rows} | Columns: ${dataset.columns}</small>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="getStats('${dataset.id}')">Stats</button>
+                                <button class="btn btn-sm btn-success" onclick="getPlots('${dataset.id}')">Plots</button>
+                                <button class="btn btn-sm btn-info" onclick="exportExcel('${dataset.id}')">Excel</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteDataset('${dataset.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                    datasetList.appendChild(item);
+                });
+            } catch (error) {
+                showStatus('Error loading datasets: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to handle file upload
+        async function handleUpload(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showStatus('Please select a file', 'warning');
+                return;
+            }
+
+            if (!file.name.endsWith('.csv')) {
+                showStatus('Only CSV files are supported', 'warning');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_URL}/datasets/`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('Dataset uploaded successfully!');
+                    fileInput.value = '';
+                    loadDatasets();
+                } else {
+                    const error = await response.text();
+                    showStatus('Upload failed: ' + error, 'danger');
+                }
+            } catch (error) {
+                showStatus('Error uploading file: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to get dataset statistics
+        async function getStats(datasetId) {
+            showLoading();
+            try {
+                const res = await fetch(`${API_URL}/datasets/${datasetId}/stats/`);
+                const stats = await res.json();
+                const container = document.getElementById("statsContainer");
+                container.innerHTML = "";                // clear old
+                const pre = document.createElement("pre");
+                pre.textContent = JSON.stringify(stats, null, 2);
+                container.appendChild(pre);
+            } catch (err) {
+                showStatus("Error getting statistics: " + err.message, "danger");
+            } finally {
+                hideLoading();
+            }
+        }
+ 
+
+        // Function to get dataset plots
+        async function getPlots(datasetId) {
+            async function getStats(datasetId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API_URL}/datasets/${datasetId}/stats/`);
+                const stats = await response.json();
+                alert(JSON.stringify(stats, null, 2));
+            } catch (error) {
+                showStatus('Error getting statistics: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }showLoading();
+            try {
+                const response = await fetch(`${API_URL}/datasets/${datasetId}/plot/`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (error) {
+                showStatus('Error generating plots: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to export dataset to Excel
+        async function exportExcel(datasetId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API_URL}/datasets/${datasetId}/excel/`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `dataset_${datasetId}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                showStatus('Error exporting to Excel: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to delete dataset
+        async function deleteDataset(datasetId) {
+            if (!confirm('Are you sure you want to delete this dataset?')) {
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_URL}/datasets/${datasetId}/`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showStatus('Dataset deleted successfully');
+                    loadDatasets();
+                } else {
+                    const error = await response.text();
+                    showStatus('Error deleting dataset: ' + error, 'danger');
+                }
+            } catch (error) {
+                showStatus('Error deleting dataset: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('uploadForm').addEventListener('submit', handleUpload);
+        document.addEventListener('DOMContentLoaded', loadDatasets);
+    </script>
+</body>
+
+</html>

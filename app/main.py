@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import os
 import json
@@ -20,9 +22,21 @@ import atexit
 
 app = FastAPI(title="Dataset API")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 # Create data directory if it doesn't exist
 DATA_DIR = Path("datasets")
 DATA_DIR.mkdir(exist_ok=True)
+
+# Mount static files
+app.mount("/app/static", StaticFiles(directory="app/static"), name="static")
 
 # File to store dataset metadata
 METADATA_FILE = DATA_DIR / "datasets.json"
@@ -171,9 +185,10 @@ def generate_visualizations(df: pd.DataFrame, numerical_cols: List[str]) -> Byte
     output.seek(0)
     return output
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    return {"message": "Welcome to Dataset API"}
+    """Serve the main HTML page"""
+    return FileResponse("app/static/index.html")
 
 @app.post("/datasets/")
 async def create_dataset(file: UploadFile = File(...)):
