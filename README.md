@@ -61,6 +61,12 @@ The API generates a comprehensive PDF report containing multiple visualizations:
 - Efficient memory management
 - Automatic cleanup of resources
 
+### Web Frontend
+
+- A single‐page UI is served at the root (`GET /`), backed by `app/static/index.html`.
+- All static assets are mounted under `/app/static`.
+- CORS is enabled (via `CORSMiddleware`) so you can host the frontend and API on different origins.
+
 ## Technical Details
 
 ### API Endpoints
@@ -116,6 +122,18 @@ uvicorn app.main:app --reload
 ```
 
 4. Access the API documentation at [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### Accessing the UI
+
+1. After starting the server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+2. Open your browser at:
+
+[http://localhost:8000/](http://localhost:8000/)
 
 ## Usage Examples
 
@@ -215,6 +233,8 @@ Note: Replace `<dataset_id>` with the actual dataset ID in all commands.
 dataset-analysis-api/
 ├── app/
 │   ├── main.py
+|   └── static/
+|       └── index.html
 ├── datasets/
 ├── client.py
 ├── requirements.txt
