@@ -65,12 +65,12 @@ The 14 tests run against a temporary folder. They cover uploads (valid, empty, t
 - The scatterplot matrix and the heatmap used the last batch of columns, while the code comment said the first. They now use the highest-variance columns.
 - The Excel export left `.xlsx` files on disk. It is now built in memory.
 - The app only started from the repository root, and uploads had no size limit.
+- Dependencies were still the February 2024 releases (FastAPI 0.109, Starlette 0.36, which have known issues in multipart parsing). They are now pinned to current versions.
 
 ## Limitations
 
 - No authentication: anyone who can reach the API can read or delete every file.
 - Files and metadata live on the local disk, with one JSON file for the metadata and no locking. That is fine for one user, not for concurrent writes.
 - PDF generation runs one report at a time (matplotlib is not thread-safe), so two large reports requested together wait for each other.
-- The dependencies are the versions pinned in 2025 (FastAPI 0.109). They should be upgraded before the API is exposed publicly.
 
 The Iris dataset in `app/static/iris.csv` comes from R. A. Fisher (1936) and is in the public domain.
