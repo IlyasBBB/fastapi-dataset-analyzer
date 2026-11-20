@@ -1,247 +1,76 @@
-# fastapi-dataset-analyzer
+# Dataset Analyzer
 
-A FastAPI-based service for uploading, analyzing, and visualizing datasets. This project provides a RESTful API for managing CSV datasets and generating comprehensive visualizations.
+A small REST API, written with FastAPI and pandas, that stores CSV files and analyses them: metadata, descriptive statistics, an Excel export and a PDF report of charts.
 
-## Features
+I built it in May 2025 as a technical test for an internship application. The brief asked for the API and a command-line client. The web page on top of it is my own addition. In November 2026 I came back to the code to fix the bugs I found, add tests and CI, and redesign the page.
 
-### Dataset Management
+![A dataset open in the web page](docs/plate-iris.png)
 
-- Upload CSV datasets with automatic metadata extraction
-- List all available datasets with their metadata
-- Get detailed information about specific datasets
-- Delete datasets when no longer needed
-- Export datasets to Excel format
+## What it does
 
-### Statistical Analysis
+- `POST /datasets/` stores a CSV file (20 MB max) and returns its id, name, size, number of rows and columns.
+- `GET /datasets/` and `GET /datasets/{id}/` list the stored files and their metadata. Metadata is kept in a JSON file, so it survives a restart.
+- `GET /datasets/{id}/stats/` returns pandas' descriptive statistics (count, mean, standard deviation, min, quartiles, max) for every numeric column.
+- `GET /datasets/{id}/excel/` returns the dataset as an `.xlsx` file.
+- `GET /datasets/{id}/plot/` returns a multi-page PDF: histograms with a density curve, box plots and value-by-index lines for each numeric column, then a scatterplot matrix and a correlation heatmap. Charts use a 10,000-row sample and the 10 numeric columns with the highest variance, so large files stay fast.
+- `DELETE /datasets/{id}/` removes the file and its metadata.
 
-- Generate comprehensive statistical summaries including:
-  - Basic statistics (mean, median, standard deviation)
-  - Data distribution metrics
-  - Column-wise statistics
-  - Data quality metrics
+FastAPI generates the interactive documentation at `/docs`.
 
-### Advanced Visualizations
+The web page (`/`) is a single HTML file with plain JavaScript. It uploads a file or the Iris sample, draws one box plot per numeric column from the quartiles returned by `/stats/`, shows the full statistics table and lists every request it sends to the API, with its status and duration.
 
-The API generates a comprehensive PDF report containing multiple visualizations:
+## Run it
 
-1. **Histograms with KDE (Kernel Density Estimation)**
-
-   - Distribution analysis for each numerical column
-   - Mean and median indicators
-   - KDE overlay for better distribution understanding
-
-2. **Box Plots**
-
-   - Outlier detection
-   - Quartile analysis
-   - Distribution spread visualization
-
-3. **Value-vs-Index Line Plots**
-
-   - Trend analysis
-   - Time series visualization
-   - Pattern identification
-
-4. **Scatterplot Matrix (Pairplot)**
-
-   - Multi-variable correlation visualization
-   - Distribution analysis
-   - Relationship patterns between variables
-
-5. **Correlation Heatmap**
-   - Inter-variable correlation analysis
-   - Correlation coefficient visualization
-   - Pattern identification in relationships
-
-### Performance Optimizations
-
-- Asynchronous processing for better performance
-- Automatic sampling for large datasets (max 10,000 rows for visualization)
-- Smart column selection based on variance
-- Efficient memory management
-- Automatic cleanup of resources
-
-### Web Frontend
-
-- A single‐page UI is served at the root (`GET /`), backed by `app/static/index.html`.
-- All static assets are mounted under `/app/static`.
-- CORS is enabled (via `CORSMiddleware`) so you can host the frontend and API on different origins.
-
-## Technical Details
-
-### API Endpoints
-
-1. **Dataset Management**
-
-   - `POST /datasets/` - Upload a new dataset
-   - `GET /datasets/` - List all datasets
-   - `GET /datasets/{id}/` - Get dataset information
-   - `DELETE /datasets/{id}/` - Delete a dataset
-   - `GET /datasets/{id}/excel/` - Export to Excel
-
-2. **Analysis Endpoints**
-   - `GET /datasets/{id}/stats/` - Get comprehensive dataset statistics
-   - `GET /datasets/{id}/plot/` - Generate visualization PDF report
-
-### Technical Stack
-
-- **Backend Framework**: FastAPI
-- **Data Processing**: Pandas
-- **Visualization**: Matplotlib, Seaborn
-- **Server**: Uvicorn (ASGI)
-- **File Handling**: Native Python I/O
-- **Data Storage**: Local file system with JSON metadata
-
-### Performance Considerations
-
-- Maximum sample size for visualization: 10,000 rows
-- Maximum columns to plot: 10 (selected by variance)
-- Plots per page: 6 (2x3 grid)
-- Automatic memory management
-- Asynchronous processing for better performance
-
-## Setup and Installation
-
-1. Create a virtual environment:
+Python 3.12:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
-
-```bash
+git clone https://github.com/IlyasBBB/fastapi-dataset-analyzer.git && cd fastapi-dataset-analyzer
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-3. Run the server:
-
-```bash
 uvicorn app.main:app --reload
 ```
 
-4. Access the API documentation at [http://localhost:8000/docs](http://localhost:8000/docs)
+Then open http://127.0.0.1:8000 and click "Try with the Iris dataset".
 
-### Accessing the UI
+Two environment variables are optional: `DATASETS_DIR` (where files are stored, `datasets/` by default) and `MAX_UPLOAD_MB` (20 by default).
 
-1. After starting the server:
+## Command-line client
 
-```bash
-uvicorn app.main:app --reload
-```
-
-2. Open your browser at:
-
-[http://localhost:8000/](http://localhost:8000/)
-
-## Usage Examples
-
-### Uploading a Dataset
-
-```python
-import requests
-
-files = {'file': open('your_dataset.csv', 'rb')}
-response = requests.post('http://localhost:8000/datasets/', files=files)
-dataset_id = response.json()['id']
-```
-
-### Getting Visualizations
-
-```python
-response = requests.get(f'http://localhost:8000/datasets/{dataset_id}/plot/')
-with open('visualizations.pdf', 'wb') as f:
-    f.write(response.content)
-```
-
-### Exporting to Excel
-
-```python
-response = requests.get(f'http://localhost:8000/datasets/{dataset_id}/excel/')
-with open('dataset.xlsx', 'wb') as f:
-    f.write(response.content)
-```
-
-## Command Line Interface (CLI)
-
-The project includes a command-line interface built with Click. Here are all available commands:
-
-### List All Datasets
+`client.py` calls the same API (it expects the server on port 8000):
 
 ```bash
+python client.py upload app/static/iris.csv
 python client.py list
+python client.py stats <id>
+python client.py plot <id>      # saves the PDF report
+python client.py export <id>    # saves the Excel file
+python client.py delete <id>
 ```
 
-Lists all available datasets with their metadata (ID, filename, size, rows, and columns).
-
-### Upload a Dataset
+## Tests
 
 ```bash
-python client.py upload path/to/your/dataset.csv
+pip install -r requirements-dev.txt
+pytest -q
+ruff check .
 ```
 
-Uploads a CSV file to the API. Only CSV files are supported.
+The 14 tests run against a temporary folder. They cover uploads (valid, empty, too large, wrong extension), unknown ids, statistics with missing values, the Excel and PDF downloads (including a file name with accents) and metadata reloading after a restart. GitHub Actions runs the linter and the tests on every push and pull request.
 
-### Get Dataset Information
+## Fixed in 2026
 
-```bash
-python client.py info <dataset_id>
-```
+- An empty or malformed CSV caused a 500 error and left an orphan file on disk. It now returns a 400 and nothing is written.
+- `/stats/` crashed whenever a column had a missing value, because pandas returns NaN and NaN is not valid JSON. Missing values now come back as `null`.
+- A file name with accents broke the PDF and Excel downloads (HTTP headers are Latin-1). The response now uses the RFC 6266 `filename*` form.
+- The scatterplot matrix and the heatmap used the last batch of columns, while the code comment said the first. They now use the highest-variance columns.
+- The Excel export left `.xlsx` files on disk. It is now built in memory.
+- The app only started from the repository root, and uploads had no size limit.
+- Dependencies were still the February 2024 releases (FastAPI 0.109, Starlette 0.36, which have known issues in multipart parsing). They are now pinned to current versions.
 
-Displays detailed information about a specific dataset.
+## Limitations
 
-### Delete a Dataset
+- No authentication: anyone who can reach the API can read or delete every file.
+- Files and metadata live on the local disk, with one JSON file for the metadata and no locking. That is fine for one user, not for concurrent writes.
+- PDF generation runs one report at a time (matplotlib is not thread-safe), so two large reports requested together wait for each other.
 
-```bash
-python client.py delete <dataset_id>
-```
-
-Deletes a dataset from the API.
-
-### Export to Excel
-
-```bash
-python client.py export <dataset_id>
-```
-
-Exports the dataset to an Excel file.
-
-### Get Dataset Statistics
-
-```bash
-python client.py stats <dataset_id>
-```
-
-Retrieves and displays comprehensive statistics for the dataset.
-
-### Generate Visualizations
-
-```bash
-python client.py plot <dataset_id>
-```
-
-Generates and saves visualization plots for the dataset.
-
-Note: Replace `<dataset_id>` with the actual dataset ID in all commands.
-
-## Development
-
-### Project Structure
-
-```
-dataset-analysis-api/
-├── app/
-│   ├── main.py
-|   └── static/
-|       └── index.html
-├── datasets/
-├── client.py
-├── requirements.txt
-├── README.md
-└── LICENSE
-```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The Iris dataset in `app/static/iris.csv` comes from R. A. Fisher (1936) and is in the public domain.

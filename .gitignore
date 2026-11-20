@@ -20,4 +20,8 @@ Thumbs.db
 # Project specific
 datasets/
 *.pdf
-*.xlsx 
+*.xlsx
+.venv/
+.pytest_cache/
+.ruff_cache/
+.impeccable/

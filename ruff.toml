@@ -1,0 +1,7 @@
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["B008"]  # File(...) en valeur par défaut : idiome FastAPI

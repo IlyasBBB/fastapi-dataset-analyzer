@@ -1,279 +1,336 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-GB">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dataset Analysis API</title>
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- DataTables -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
-    <!-- AOS Animations -->
-    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    <style>
-        body { transition: background 0.3s, color 0.3s; }
-        .navbar { background: #1f1f1f !important; }
-        .feature-card { transition: transform 0.3s; }
-        .feature-card:hover { transform: translateY(-5px); }
-        .hero-section { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; padding: 80px 0; text-align: center; }
-        .datatable-container { margin-top: 20px; }
-        #chartsModal .modal-dialog { max-width: 800px; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dataset Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Libre+Franklin:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f1ead9'/%3E%3Crect x='8' y='11' width='16' height='10' fill='%23b5523b' stroke='%2322313f' stroke-width='2'/%3E%3Cpath d='M3 16h5M24 16h5M15 9v14' stroke='%2322313f' stroke-width='2'/%3E%3C/svg%3E">
+<style>
+:root {
+  --papier: #f1ead9; --papier-2: #e7dcc2; --filet: #cdbfa3; --filet-2: #d9ccb0;
+  --encre: #22313f; --encre-2: #56636e;
+  --brique: #b5523b; --ocre: #d9a441; --sauge: #5d7d6a; --ardoise: #7a8fb0; --prune: #8c5a7a; --olive: #8a8a3c;
+  --ok: #3f6b52; --erreur: #a2372a;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  color: var(--encre); font: 16px/1.45 "Libre Franklin", "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--papier); }
+::selection { background: var(--ocre); color: var(--encre); }
+:focus-visible { outline: 3px solid var(--ocre); outline-offset: 2px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.serif { font-family: "Libre Caslon Text", Georgia, serif; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.atlas { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; min-height: 100vh; }
+
+/* Colonne gauche : import et planches */
+.index { border-right: 1px solid var(--filet); padding: 28px 24px; }
+.index h1 { font: 700 26px/1.1 "Libre Caslon Text", serif; margin: 0 0 4px; }
+.index .sub { font-size: 13px; color: var(--encre-2); margin: 0 0 24px; }
+.depot { display: block; border: 1.5px dashed #9c8c6c; padding: 22px 16px; text-align: center; font-size: 14px; cursor: pointer; transition: background .2s, border-color .2s; }
+.depot:hover, .depot.survol { background: var(--papier-2); border-color: var(--encre); }
+.depot b { display: block; font-size: 15px; margin-bottom: 2px; }
+.depot input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.btn { display: block; width: 100%; border: 0; background: var(--encre); color: var(--papier); padding: 11px; font-weight: 600; font-size: 14px; margin: 12px 0 0; transition: background .15s; }
+.btn:hover { background: #33475a; }
+.btn[disabled] { opacity: .55; cursor: wait; }
+.alerte { margin: 12px 0 0; padding: 10px 12px; background: #f3d9d2; color: var(--erreur); font-size: 14px; }
+.planches { list-style: none; margin: 28px 0 0; padding: 0; }
+.planches h2 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 8px; }
+.planches button { display: block; width: calc(100% + 48px); margin: 0 -24px; text-align: left; background: none; border: 0; border-top: 1px solid var(--filet); padding: 12px 24px; font-size: 14px; }
+.planches button:hover { background: var(--papier-2); }
+.planches button[aria-current="true"] { background: var(--papier-2); box-shadow: inset 3px 0 0 var(--brique); }
+.planches i { display: block; font: italic 12px "Libre Caslon Text", serif; color: var(--brique); }
+.planches .vide { font-size: 14px; color: var(--encre-2); border-top: 1px solid var(--filet); padding-top: 12px; }
+
+/* Centre : la planche */
+.planche { padding: 32px 44px 56px; min-width: 0; }
+.numero { font: italic 15px "Libre Caslon Text", serif; color: var(--brique); }
+.planche h2 { font: 700 40px/1.1 "Libre Caslon Text", serif; margin: 4px 0 14px; overflow-wrap: anywhere; }
+.cartouche { display: flex; flex-wrap: wrap; gap: 8px 32px; border-top: 2px solid var(--encre); border-bottom: 1px solid var(--encre); padding: 10px 0; margin: 0 0 8px; font-size: 14px; }
+.cartouche b { display: block; font-size: 22px; }
+.legende { font-size: 13px; color: var(--encre-2); margin: 0 0 18px; }
+.boite { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 110px; gap: 16px; align-items: center; min-height: 74px; border-bottom: 1px solid var(--filet-2); }
+.boite .nom { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.boite .moy { font-size: 13px; color: var(--encre-2); text-align: right; }
+.axe { position: relative; height: 46px; }
+.axe .moustache { position: absolute; top: 15px; height: 2px; background: var(--encre); transform-origin: left; }
+.axe .cadre { position: absolute; top: 3px; height: 26px; border: 2px solid var(--encre); transform-origin: left; }
+.axe .mediane { position: absolute; top: 0; width: 3px; height: 32px; background: var(--encre); }
+.axe .borne { position: absolute; top: 33px; font-size: 11px; color: var(--encre-2); }
+.axe .borne.max { right: 0; }
+.trace .moustache { animation: trace .7s var(--ease) both; }
+.trace .cadre { animation: trace .7s .18s var(--ease) both; }
+.trace .mediane { animation: apparait .4s .55s var(--ease) both; }
+@keyframes trace { from { transform: scaleX(0); } }
+@keyframes apparait { from { opacity: 0; transform: scaleY(.3); } }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 0; }
+.actions a, .actions button { border: 1.5px solid var(--encre); background: none; color: var(--encre); padding: 9px 14px; font-weight: 600; font-size: 14px; text-decoration: none; transition: background .15s, color .15s; }
+.actions a:hover, .actions button:hover { background: var(--encre); color: var(--papier); }
+.actions .supprimer { margin-left: auto; border-color: var(--erreur); color: var(--erreur); }
+.actions .supprimer:hover { background: var(--erreur); color: var(--papier); }
+.tableau-wrap { overflow-x: auto; margin-top: 36px; }
+table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+caption { text-align: left; font: italic 15px "Libre Caslon Text", serif; padding-bottom: 8px; }
+th, td { padding: 7px 12px; border-bottom: 1px solid var(--filet-2); text-align: right; white-space: nowrap; }
+thead th { border-bottom: 2px solid var(--encre); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+tbody th { text-align: left; font-weight: 600; }
+.accueil { max-width: 60ch; padding-top: 12vh; }
+.accueil h2 { font-size: 44px; }
+.accueil p { font-size: 18px; color: var(--encre-2); }
+.note { font-size: 14px; color: var(--encre-2); margin-top: 18px; }
+
+/* Droite : journal des requêtes */
+.journal { border-left: 1px solid var(--filet); padding: 28px 22px; font-size: 13px; }
+.journal h2 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 4px; }
+.journal p { margin: 0 0 14px; color: var(--encre-2); }
+.journal ol { list-style: none; margin: 0; padding: 0; }
+.journal li { padding: 10px 0; border-bottom: 1px solid var(--filet-2); font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+.journal li.neuf { animation: arrive .5s var(--ease); }
+@keyframes arrive { from { background: rgba(217, 164, 65, .35); } }
+.journal .code { font-weight: 700; color: var(--ok); }
+.journal .code.ko { color: var(--erreur); }
+.journal .duree { color: var(--encre-2); }
+.journal a { color: var(--encre); }
+
+@media (max-width: 1150px) {
+  .atlas { grid-template-columns: 280px minmax(0, 1fr); }
+  .journal { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--filet); }
+}
+@media (max-width: 760px) {
+  .atlas { grid-template-columns: 1fr; }
+  .index { border-right: 0; border-bottom: 1px solid var(--filet); padding: 22px 16px; }
+  .planches button { width: calc(100% + 32px); margin: 0 -16px; padding: 12px 16px; }
+  .planche { padding: 24px 16px 40px; }
+  .planche h2, .accueil h2 { font-size: 30px; }
+  .accueil { padding-top: 2vh; }
+  .boite { grid-template-columns: 1fr 80px; row-gap: 4px; padding: 10px 0; }
+  .boite .axe { grid-column: 1 / -1; grid-row: 2; }
+  .journal { padding: 22px 16px; }
+  .actions .supprimer { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
 </head>
-
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark" data-aos="fade-down">
-        <div class="container-fluid">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item"><a class="nav-link" href="#upload">Upload</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#datasets">Datasets</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#api">API</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#cli">CLI</a></li>
-                    <li class="nav-item"><a class="nav-link" href="http://localhost:8000/docs" target="_blank">API Docs</a></li>
-                </ul>
-            </div>
-        </div>
+<div class="atlas">
+  <aside class="index">
+    <h1>Dataset Analyzer</h1>
+    <p class="sub">FastAPI · pandas · matplotlib</p>
+    <label class="depot" id="depot">
+      <b>Drop a CSV file here</b>or click to browse (20 MB max)
+      <input type="file" id="fichier" accept=".csv,text/csv">
+    </label>
+    <button class="btn" id="iris" type="button">Try with the Iris dataset</button>
+    <div id="alerte" class="alerte" role="alert" hidden></div>
+    <nav class="planches" aria-labelledby="titre-planches">
+      <h2 id="titre-planches">Plates</h2>
+      <div id="liste"></div>
     </nav>
+  </aside>
 
-    <!-- Hero Section -->
-    <section class="hero-section" data-aos="zoom-in">
-        <div class="container">
-            <h1 class="display-4">Visualisez vos données en un clin d'œil</h1>
-            <p class="lead">Téléchargez, explorez et analysez vos jeux de données avec élégance.</p>
-            <a href="#upload" class="btn btn-light btn-lg mt-3"><i class="fa fa-upload"></i> Commencer</a>
-        </div>
-    </section>
-
-    <!-- Upload Section -->
-    <section id="upload" class="py-5" data-aos="fade-up">
-        <div class="container">
-            <h2 class="text-center mb-4">Importer un jeu de données</h2>
-            <div class="row justify-content-center">
-                <div class="col-md-6">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <form id="uploadForm" class="mb-3">
-                                <div class="mb-3">
-                                    <label for="csvFile" class="form-label">Choisissez un fichier CSV</label>
-                                    <input type="file" class="form-control" id="csvFile" accept=".csv" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100"><i class="fa fa-file-csv"></i> Importer</button>
-                            </form>
-                            <div id="uploadStatus" class="alert" role="alert" style="display:none;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Datasets Section -->
-    <section id="datasets" class="py-5 bg-light" data-aos="fade-up">
-        <div class="container">
-            <h2 class="text-center mb-4">Vos jeux de données</h2>
-            <div class="datatable-container">
-                <table id="datasetTable" class="display stripe hover" style="width:100%;">
-                    <thead>
-                        <tr>
-                            <th>Nom du fichier</th>
-                            <th>ID</th>
-                            <th>Lignes</th>
-                            <th>Colonnes</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <!-- Charts & Stats Modal -->
-    <div class="modal fade" id="chartsModal" tabindex="-1">
-      <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Statistiques</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <ul class="nav nav-tabs" id="statsTabs" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-content" type="button" role="tab">Statistiques</button>
-              </li>
-            </ul>
-            <div class="tab-content mt-3">
-              <div class="tab-pane fade show active" id="stats-content" role="tabpanel">
-                <div class="table-responsive">
-                    <table class="table table-striped" id="statsTable">
-                    <thead><tr><th>Colonne</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead>
-                    <tbody></tbody>
-                    </table>
-                </div>
-              </div>
-              <div class="tab-pane fade" id="plots-content" role="tabpanel">
-                <iframe id="plotsPdf" style="width:100%; height:500px; border:none;"></iframe>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <main class="planche" id="planche" aria-live="polite">
+    <div class="accueil">
+      <span class="numero">Introduction</span>
+      <h2>Each CSV becomes a plate.</h2>
+      <p>Upload a file to see its size, its columns and a box plot of every numeric column, drawn from the quartiles returned by the API. From there, download the full PDF report or an Excel copy.</p>
+      <p class="note">No file at hand? The Iris dataset (Fisher, 1936) is one click away.</p>
     </div>
+  </main>
 
-    <!-- API & CLI Sections -->
-    <section id="api" class="py-5" data-aos="fade-right">
-        <div class="container">
-            <h2 class="text-center mb-4">API Endpoints</h2>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="card feature-card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="fa fa-database"></i> Gestion des données</h5>
-                            <pre class="bg-light p-2 rounded"><code>POST /datasets/      - Importer
-GET  /datasets/      - Lister
-GET  /datasets/{id}/ - Détails
-DELETE /datasets/{id}/ - Supprimer
-GET /datasets/{id}/excel/ - Export Excel</code></pre>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card feature-card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="fa fa-chart-bar"></i> Analyse & Export</h5>
-                            <pre class="bg-light p-2 rounded"><code>GET /datasets/{id}/stats/ - Statistiques
-GET /datasets/{id}/plot/  - Graphiques
-GET /datasets/{id}/excel/ - Export Excel</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <aside class="journal" aria-labelledby="titre-journal">
+    <h2 id="titre-journal">API requests</h2>
+    <p>Every call this page makes, as it happens. Full reference in the <a href="/docs" target="_blank" rel="noopener">interactive docs</a>.</p>
+    <ol id="requetes"></ol>
+  </aside>
+</div>
 
-    <section id="cli" class="py-5 bg-light" data-aos="fade-left">
-        <div class="container">
-            <h2 class="text-center mb-4">Interface en ligne de commande</h2>
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <pre class="bg-light p-3 rounded"><code>python client.py list             # Lister
-python client.py upload <file>    # Importer
-python client.py info <id>        # Détails
-python client.py delete <id>      # Supprimer
-python client.py stats <id>       # Statistiques
-python client.py plot <id>        # Graphiques
-python client.py export <id>      # Excel</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<template id="modele-boite">
+  <div class="boite">
+    <span class="nom"></span>
+    <div class="axe" aria-hidden="true"><span class="moustache"></span><span class="cadre"></span><span class="mediane"></span><span class="borne min"></span><span class="borne max"></span></div>
+    <span class="moy"></span>
+  </div>
+</template>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-    <script>
-        const API_URL = 'http://localhost:8000';
-        AOS.init({ once: true });
+<script>
+const COULEURS = ['--brique', '--ocre', '--sauge', '--ardoise', '--prune', '--olive'];
+const ROMAINS = [['M', 1000], ['CM', 900], ['D', 500], ['CD', 400], ['C', 100], ['XC', 90], ['L', 50], ['XL', 40], ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]];
+const $ = id => document.getElementById(id);
+let jeux = [];
+let courant = null;
 
-        // Initialize DataTable
-        const table = $('#datasetTable').DataTable({
-            columns: [
-                { data: 'filename' },
-                { data: 'id' },
-                { data: 'rows' },
-                { data: 'columns' },
-                { data: null, orderable: false }
-            ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json' }
-        });
+const romain = n => ROMAINS.reduce((s, [l, v]) => { while (n >= v) { s += l; n -= v; } return s; }, '');
+const taille = o => o < 1024 ? `${o} B` : o < 1048576 ? `${(o / 1024).toFixed(1)} KB` : `${(o / 1048576).toFixed(1)} MB`;
+const nombre = v => v === null || v === undefined ? '—' : Math.abs(v) >= 1000 ? v.toLocaleString('en-GB', { maximumFractionDigits: 1 }) : Number(v.toPrecision(4)).toString();
+function el(tag, props = {}, ...enfants) {
+  const e = Object.assign(document.createElement(tag), props);
+  e.append(...enfants);
+  return e;
+}
 
-        function showStatus(message, type='success') {
-            const alert = $('#uploadStatus');
-            alert.text(message).removeClass().addClass(`alert alert-${type}`).show();
-            setTimeout(() => alert.hide(), 4000);
-        }
+// Toutes les requêtes passent par ici pour apparaître dans le journal.
+async function api(methode, chemin, corps) {
+  const debut = performance.now();
+  let rep;
+  try {
+    rep = await fetch(chemin, { method: methode, body: corps });
+  } catch (e) {
+    journal(methode, chemin, 'réseau', 0, false);
+    throw new Error('The API did not answer.');
+  }
+  journal(methode, chemin, rep.status, Math.round(performance.now() - debut), rep.ok);
+  if (!rep.ok) {
+    const detail = await rep.json().catch(() => ({}));
+    throw new Error(typeof detail.detail === 'string' ? detail.detail : `Error ${rep.status}`);
+  }
+  return rep.headers.get('content-type')?.includes('json') ? rep.json() : rep;
+}
 
-        $('#uploadForm').on('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = $('#csvFile')[0];
-            if (!fileInput.files.length) { showStatus('Aucun fichier sélectionné', 'warning'); return; }
-            const file = fileInput.files[0];
-            if (!file.name.endsWith('.csv')) { showStatus('Seuls les CSV sont acceptés', 'warning'); return; }
-            const form = new FormData(); form.append('file', file);
-            try {
-                const resp = await fetch(`${API_URL}/datasets/`, { method: 'POST', body: form });
-                if (resp.ok) { showStatus('Import réussi!'); fileInput.value = ''; loadDatasets(); }
-                else { showStatus('Erreur: ' + await resp.text(), 'danger'); }
-            } catch (err) { showStatus('Erreur réseau', 'danger'); }
-        });
+function journal(methode, chemin, code, ms, ok) {
+  const li = el('li', { className: 'neuf' },
+    el('span', { className: 'code' + (ok ? '' : ' ko'), textContent: code }), ` ${methode} ${chemin.replace(/[0-9a-f-]{36}/, '{id}')} `,
+    el('span', { className: 'duree', textContent: `· ${ms} ms` }));
+  $('requetes').prepend(li);
+  while ($('requetes').children.length > 30) $('requetes').lastChild.remove();
+}
 
-        async function loadDatasets() {
-            try {
-                const resp = await fetch(`${API_URL}/datasets/`);
-                const data = await resp.json();
-                table.clear().rows.add(data.map(ds => ({
-                    ...ds,
-                    null: '',
-                    DT_RowId: ds.id
-                }))).draw();
-                $('#datasetTable tbody tr').each(function() {
-                    const id = this.id;
-                    $('td:last', this).html(
-                        `<button class="btn btn-sm btn-primary me-1" onclick="showStats('${id}')"><i class='fa fa-chart-line'></i></button>
-                         <button class="btn btn-sm btn-success me-1" onclick="showPlots('${id}')"><i class='fa fa-file-pdf'></i></button>
-                         <button class="btn btn-sm btn-warning me-1" onclick="window.open('${API_URL}/datasets/${id}/excel/', '_blank')"><i class='fa fa-file-excel'></i></button>
-                         <button class="btn btn-sm btn-danger" onclick="deleteDataset('${id}')"><i class='fa fa-trash'></i></button>`
-                    );
-                });
-            } catch (err) { console.error(err); }
-        }
+function alerte(message) {
+  $('alerte').textContent = message || '';
+  $('alerte').hidden = !message;
+}
 
-        async function showStats(id) {
-            try {
-                const resp = await fetch(`${API_URL}/datasets/${id}/stats/`);
-                const stats = await resp.json();
-                const tbody = $('#statsTable tbody').empty();
-                Object.entries(stats).forEach(([col, v]) => {
-                    tbody.append(`<tr><td>${col}</td><td>${v.min}</td><td>${v['25%']}</td><td>${v['50%']}</td><td>${v['75%']}</td><td>${v.max}</td></tr>`);
-                });
-                var statsTab = new bootstrap.Tab($('#stats-tab'));
-                statsTab.show();
-                new bootstrap.Modal('#chartsModal').show();
-            } catch (err) { console.error(err); }
-        }
+function listePlanches() {
+  const liste = $('liste');
+  liste.replaceChildren();
+  if (!jeux.length) { liste.append(el('p', { className: 'vide', textContent: 'No dataset yet.' })); return; }
+  jeux.forEach((j, i) => {
+    const b = el('button', { type: 'button' }, el('i', { textContent: `Plate ${romain(i + 1)}` }), `${j.filename} · ${j.rows.toLocaleString('en-GB')} × ${j.columns}`);
+    b.setAttribute('aria-current', String(j.id === courant));
+    b.addEventListener('click', () => ouvrir(j.id));
+    liste.append(b);
+  });
+}
 
-        function showPlots(id) {
-            $('#plotsTable').empty();
-            $('#plotsPdf').attr('src', `${API_URL}/datasets/${id}/plot/`);
-            var plotsTab = new bootstrap.Tab($('#plots-tab'));
-            plotsTab.show();
-            new bootstrap.Modal('#chartsModal').show();
-        }
+async function charger() {
+  jeux = await api('GET', '/datasets/');
+  listePlanches();
+  if (jeux.length) ouvrir(jeux[jeux.length - 1].id);
+}
 
-        async function deleteDataset(id) {
-            if (!confirm('Confirmer la suppression?')) return;
-            try {
-                const resp = await fetch(`${API_URL}/datasets/${id}/`, { method: 'DELETE' });
-                if (resp.ok) loadDatasets();
-                else alert('Erreur: ' + await resp.text());
-            } catch (err) { console.error(err); }
-        }
+async function ouvrir(id) {
+  courant = id;
+  listePlanches();
+  const index = jeux.findIndex(j => j.id === id);
+  const meta = jeux[index];
+  const stats = await api('GET', `/datasets/${id}/stats/`);
+  const colonnes = Object.keys(stats).filter(c => typeof stats[c].mean === 'number');
 
-        $(document).ready(loadDatasets);
-    </script>
+  const planche = $('planche');
+  planche.replaceChildren(
+    el('span', { className: 'numero', textContent: `Plate ${romain(index + 1)}` }),
+    el('h2', { textContent: meta.filename }),
+  );
+  const cart = el('div', { className: 'cartouche' });
+  [[meta.rows.toLocaleString('en-GB'), 'rows'], [meta.columns, 'columns'], [taille(meta.size), 'size'], [colonnes.length, 'numeric']]
+    .forEach(([v, l]) => cart.append(el('div', {}, el('b', { textContent: v }), l)));
+  planche.append(cart);
+
+  if (colonnes.length) {
+    planche.append(el('p', { className: 'legende', textContent: 'Box: first to third quartile · bar: median · whiskers: min to max. Each row has its own scale.' }));
+    colonnes.forEach((c, i) => planche.append(boite(c, stats[c], COULEURS[i % COULEURS.length])));
+  } else {
+    planche.append(el('p', { className: 'note', textContent: 'This file has no numeric column, so there is nothing to plot.' }));
+  }
+
+  const actions = el('div', { className: 'actions' });
+  if (colonnes.length) actions.append(el('a', { href: `/datasets/${id}/plot/`, textContent: 'Download the PDF report', onclick: () => journal('GET', `/datasets/${id}/plot/`, '→', 0, true) }));
+  actions.append(el('a', { href: `/datasets/${id}/excel/`, textContent: 'Excel export', onclick: () => journal('GET', `/datasets/${id}/excel/`, '→', 0, true) }));
+  const sup = el('button', { type: 'button', className: 'supprimer', textContent: 'Delete' });
+  sup.addEventListener('click', () => supprimer(id, meta.filename));
+  actions.append(sup);
+  planche.append(actions);
+
+  if (Object.keys(stats).length) planche.append(tableau(stats));
+}
+
+function boite(nom, s, couleur) {
+  const ligne = $('modele-boite').content.firstElementChild.cloneNode(true);
+  ligne.querySelector('.nom').textContent = nom;
+  ligne.querySelector('.moy').textContent = `mean ${nombre(s.mean)}`;
+  const etendue = (s.max - s.min) || 1;
+  const pos = v => `${((v - s.min) / etendue) * 100}%`;
+  const axe = ligne.querySelector('.axe');
+  Object.assign(axe.querySelector('.moustache').style, { left: '0', width: '100%' });
+  Object.assign(axe.querySelector('.cadre').style, { left: pos(s['25%']), width: `calc(${pos(s['75%'])} - ${pos(s['25%'])})`, background: `var(${couleur})` });
+  axe.querySelector('.mediane').style.left = `calc(${pos(s['50%'])} - 1px)`;
+  axe.querySelector('.min').textContent = nombre(s.min);
+  axe.querySelector('.max').textContent = nombre(s.max);
+  axe.setAttribute('aria-label', `${nom}: min ${s.min}, quartiles ${s['25%']}, ${s['50%']}, ${s['75%']}, max ${s.max}`);
+  axe.removeAttribute('aria-hidden');
+  axe.setAttribute('role', 'img');
+  requestAnimationFrame(() => ligne.classList.add('trace'));
+  return ligne;
+}
+
+function tableau(stats) {
+  const lignes = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'];
+  const cols = Object.keys(stats);
+  const table = el('table', {}, el('caption', { textContent: 'Descriptive statistics returned by the stats endpoint' }));
+  const tete = el('tr', {}, el('th', { scope: 'col', innerHTML: '<span class="sr-only">Statistic</span>' }));
+  cols.forEach(c => tete.append(el('th', { scope: 'col', textContent: c })));
+  table.append(el('thead', {}, tete));
+  const corps = el('tbody');
+  lignes.filter(l => cols.some(c => l in stats[c])).forEach(l => {
+    const tr = el('tr', {}, el('th', { scope: 'row', textContent: l }));
+    cols.forEach(c => tr.append(el('td', { textContent: nombre(stats[c][l]) })));
+    corps.append(tr);
+  });
+  table.append(corps);
+  return el('div', { className: 'tableau-wrap' }, table);
+}
+
+async function envoyer(fichier) {
+  alerte('');
+  const donnees = new FormData();
+  donnees.append('file', fichier);
+  $('iris').disabled = true;
+  try {
+    const meta = await api('POST', '/datasets/', donnees);
+    jeux.push(meta);
+    await ouvrir(meta.id);
+  } catch (e) {
+    alerte(e.message);
+  } finally {
+    $('iris').disabled = false;
+  }
+}
+
+async function supprimer(id, nom) {
+  if (!confirm(`Delete ${nom}? The file and its metadata will be removed.`)) return;
+  try {
+    await api('DELETE', `/datasets/${id}/`);
+    jeux = jeux.filter(j => j.id !== id);
+    courant = null;
+    if (jeux.length) ouvrir(jeux[jeux.length - 1].id); else location.reload();
+  } catch (e) { alerte(e.message); }
+}
+
+$('fichier').addEventListener('change', e => e.target.files[0] && envoyer(e.target.files[0]));
+const depot = $('depot');
+['dragenter', 'dragover'].forEach(t => depot.addEventListener(t, e => { e.preventDefault(); depot.classList.add('survol'); }));
+['dragleave', 'drop'].forEach(t => depot.addEventListener(t, () => depot.classList.remove('survol')));
+depot.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) envoyer(e.dataTransfer.files[0]); });
+$('iris').addEventListener('click', async () => {
+  const rep = await fetch('/app/static/iris.csv');
+  envoyer(new File([await rep.blob()], 'iris.csv', { type: 'text/csv' }));
+});
+charger().catch(e => alerte(e.message));
+</script>
 </body>
 </html>
