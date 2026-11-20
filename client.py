@@ -1,8 +1,8 @@
+import json
+import os
+
 import click
 import requests
-import os
-from pathlib import Path
-import json
 
 API_URL = "http://localhost:8000"
 
@@ -20,7 +20,7 @@ def list():
         if not datasets:
             click.echo("No datasets found")
             return
-        
+
         for dataset in datasets:
             click.echo(f"ID: {dataset['id']}")
             click.echo(f"Filename: {dataset['filename']}")
@@ -38,14 +38,14 @@ def upload(file_path):
     if not file_path.endswith('.csv'):
         click.echo("Error: Only CSV files are supported")
         return
-    
+
     with open(file_path, 'rb') as f:
         files = {'file': (os.path.basename(file_path), f, 'text/csv')}
         response = requests.post(f"{API_URL}/datasets/", files=files)
-    
+
     if response.status_code == 200:
         dataset = response.json()
-        click.echo(f"Dataset uploaded successfully!")
+        click.echo("Dataset uploaded successfully!")
         click.echo(f"ID: {dataset['id']}")
         click.echo(f"Filename: {dataset['filename']}")
     else:
@@ -114,4 +114,4 @@ def plot(dataset_id):
         click.echo(f"Error: {response.text}")
 
 if __name__ == '__main__':
-    cli() 
+    cli()
