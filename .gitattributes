@@ -1,0 +1,2 @@
+# The web page is a small client of the API: count the project as Python on GitHub
+app/static/*.html linguist-detectable=false
